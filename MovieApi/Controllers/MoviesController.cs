@@ -25,6 +25,43 @@ public class MoviesController : ControllerBase
     }
 
     // GET
+    [HttpGet]
+    public async Task<IActionResult> GetAll()
+    {
+        var movies = await _context.Movies.Include(m=>m.Genre).Select(g=>new MovieDetailsDto(){ Title = g.Title,GenreName = g.Genre.Name,Rate = g.Rate,Year = g.Year,StoryLine = g.StoryLine}).ToListAsync();
+        return Ok(movies);
+    }
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetOne(int id)
+    {
+        var movie =await _context.Movies.Include(m=>m.Genre).SingleOrDefaultAsync(m=>m.Id==id);
+        
+        if (movie ==null)
+        {
+            return NotFound("movie not found");
+        }
+
+        var moviedto = new MovieDetailsDto()
+        {
+            Rate = movie.Rate,
+            Title = movie.Title,
+            Year = movie.Year,
+            GenreName = movie.Genre.Name,
+            StoryLine = movie.StoryLine
+        };
+        
+        return Ok(moviedto);
+
+    }
+
+    [HttpGet("getByGenre/{id}")]
+    public async Task<IActionResult> getByGenre(int id)
+    {
+        var movie = await _context.Movies.Include(m => m.Genre).Where(m => m.GenreId == id).ToListAsync();
+            return Ok(movie);
+        
+    }
+
     [HttpPost]
     public async Task<IActionResult> CreateMovie([FromForm]MovieDto dto)
     {
