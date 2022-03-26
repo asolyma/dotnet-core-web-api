@@ -65,6 +65,10 @@ public class MoviesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> CreateMovie([FromForm]MovieDto dto)
     {
+        if (dto.Poster == null)
+        {
+            return BadRequest("poster is required");
+        }
         await using var dataStrem = new MemoryStream();
 
         if (_allowedExtensions.Contains(Path.GetExtension(dto.Poster.FileName.ToLower())))
@@ -81,11 +85,18 @@ public class MoviesController : ControllerBase
             return BadRequest("max size is 1 mb");
         }
 
+        var valid = await _context.Genres.SingleOrDefaultAsync(g => g.Id == dto.GenreId);
+        if (valid == null)
+        {
+            return NotFound("invalid genre");
+        }
+        /*
         var isValidGenre = await _context.Genres.AllAsync(g => g.Id == dto.GenreId);
         if (!isValidGenre)
         {
             return BadRequest("invalid Genre");
         }
+        */
 
         
         var movie = new Movie(){
@@ -100,4 +111,59 @@ public class MoviesController : ControllerBase
        await _context.SaveChangesAsync();
        return Ok(movie);
     }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> deleteMovie(int id)
+
+    {
+        var movie = await _context.Movies.SingleOrDefaultAsync(m => m.Id == id);
+        if (movie == null)
+        {
+            return NotFound("invalid id");
+        }
+         _context.Movies.Remove(movie);
+         await _context.SaveChangesAsync();
+         return Ok($"Movie with id:{id} successfully deleted");
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> updateMovie(int id, [FromForm] MovieDto dto)
+    {
+        var mov = await _context.Movies.FindAsync(id);
+        if (dto.Poster != null)
+        {
+            await using var dataStrem = new MemoryStream();
+
+            if (_allowedExtensions.Contains(Path.GetExtension(dto.Poster.FileName.ToLower())))
+            {
+                await dto.Poster.CopyToAsync(dataStrem);
+                mov.Poster = dataStrem.ToArray();
+            }
+            else
+            {
+                return BadRequest("only jpg an jpeg formats are allowed");
+            }
+
+            if (dto.Poster.Length>_maxAllowedSize)
+            {
+                return BadRequest("max size is 1 mb");
+            }
+            
+        }
+        var valid = await _context.Genres.SingleOrDefaultAsync(g => g.Id == dto.GenreId);
+        if (valid == null)
+        {
+            return NotFound("invalid genre");
+        }
+
+        mov.Title = dto.Title;
+           mov.Rate = dto.Rate;
+           mov.Year = dto.Year;
+         mov.GenreId = dto.GenreId;
+        mov.StoryLine = dto.StoryLine;
+        await _context.SaveChangesAsync();
+        return Ok(mov);
+
+    }
+
 }
