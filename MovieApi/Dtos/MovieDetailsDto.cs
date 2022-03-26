@@ -6,5 +6,5 @@ public class MovieDetailsDto
     public int Year { get; set; }
     public double Rate { get; set; }
     public string StoryLine { get; set; }
-    public string GenreName { get; set; }
+    public string? GenreName { get; set; }
 }
